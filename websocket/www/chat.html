@@ -1,0 +1,107 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>无标题文档</title>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+window.onload = function() {
+	
+	var oList = document.getElementById('list');
+	var oContent = document.getElementById('content');
+	var oSendBtn = document.getElementById('sendBtn');
+	var oConnBtn = document.getElementById('connBtn');
+	var oQuitBtn = document.getElementById('quitBtn');
+	var clientIo = null;
+	var isConnection = false;
+
+	oConnBtn.onclick = function() {
+		
+		if (isConnection) {
+			alert('你已经连接到服务器了');
+		} else {
+			clientIo = io('http://localhost:5000');
+			
+			//console.log(clientIo);
+			
+			clientIo.on('connect', function() {
+				console.log('成功连接到服务器了');
+				isConnection = true;
+				oConnBtn.disabled = true;
+				oQuitBtn.disabled = false;
+			});
+			
+			clientIo.on('disconnect', function() {
+				console.log('退出服务器了');
+			});
+			
+			clientIo.on('welcome', function(data) {
+				var oP = document.createElement('p');
+				oP.style.color = 'red';
+				oP.style.fontWeight = 'bold';
+				oP.innerHTML = '欢迎您，' + data.id
+				oList.appendChild(oP);
+			});
+			
+			clientIo.on('welcomeAll', function(data) {
+				var oP = document.createElement('p');
+				oP.style.color = 'blue';
+				oP.style.fontWeight = 'bold';
+				oP.innerHTML = '<strong style="color:red">' + data.id + '</strong> 进入了聊天室，大家欢迎！'
+				oList.appendChild(oP);
+			});
+			
+			clientIo.on('response', function(data) {
+				var oP = document.createElement('p');
+				oP.innerHTML = '<strong style="color: blue">'+ data.id +'</strong> 说：' + data.content;
+				oList.appendChild(oP);
+			});
+			
+			clientIo.on('quitAll', function(data) {
+				var oP = document.createElement('p');
+				oP.style.color = 'blue';
+				oP.style.fontWeight = 'bold';
+				oP.innerHTML = '<strong style="color:red">' + data.id + '</strong> 退出了聊天室！'
+				oList.appendChild(oP);
+			});
+			
+		}
+		
+	}
+	
+	oSendBtn.onclick = function() {
+		//oContent
+		if (!isConnection) {
+			alert('你还没有连接到服务器');
+		} else {
+			clientIo.emit('send', {
+				content : oContent.value
+			});
+		}
+	}
+	
+	oQuitBtn.onclick = function() {
+		if (!isConnection) {
+			alert('你还没有连接到服务器');
+		} else {
+			clientIo.disconnect();
+			isConnection = false;
+			oConnBtn.disabled = false;
+			oQuitBtn.disabled = true;
+		}
+	}
+	
+}
+</script>
+</head>
+
+<body>
+	<h1>Web聊天室</h1>
+    <div style="width: 500px; height: 300px;  border: 1px solid #000; overflow: auto" id="list"></div>
+    <br />
+    <input type="text" id="content" />
+    <input type="button" value="发送消息" id="sendBtn" />
+    <input type="button" value="连接服务器" id="connBtn" />
+    <input type="button" value="退出" id="quitBtn" disabled />
+</body>
+</html>
